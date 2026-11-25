@@ -19,8 +19,10 @@ import {
   getBaseBranchConfig,
   updateRepo,
 } from './index.ts';
+import * as _vulners from './vulners/index.ts';
 
 vi.mock('./extract-update.ts');
+vi.mock('./vulners/index.ts');
 
 const extract = vi.mocked(_extractUpdate).extract;
 
@@ -55,6 +57,20 @@ describe('workers/repository/process/index', () => {
         branches: [undefined],
         packageFiles: undefined,
       });
+    });
+
+    it('asks Vulners once about all base branches', async () => {
+      const first = partial<Record<string, PackageFile[]>>({ npm: [] });
+      const second = partial<Record<string, PackageFile[]>>({ pip: [] });
+      extract.mockResolvedValueOnce(first).mockResolvedValueOnce(second);
+      config.baseBranchPatterns = ['branch1', 'branch2'];
+      scm.branchExists.mockResolvedValue(true);
+
+      await extractDependencies(config);
+
+      expect(
+        vi.mocked(_vulners).prefetchVulnersAudit,
+      ).toHaveBeenCalledExactlyOnceWith(config, [first, second]);
     });
 
     it('keeps the first base branch package files and tolerates no fork sync', async () => {

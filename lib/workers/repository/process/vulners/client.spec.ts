@@ -1,6 +1,6 @@
 import * as httpMock from '~test/http-mock.ts';
 import * as hostRules from '../../../../util/host-rules.ts';
-import { fetchVulnersAudit, toCycloneDx } from './client.ts';
+import { fetchVulnersAudit, isWalletLow, toCycloneDx } from './client.ts';
 import type { VulnersPackage } from './purl.ts';
 
 const baseUrl = 'https://vulners.com';
@@ -206,6 +206,14 @@ describe('workers/repository/process/vulners/client', () => {
     await expect(fetchVulnersAudit([django])).resolves.toMatchObject({
       status: 'failed',
     });
+  });
+
+  it.each([
+    [undefined, false],
+    [{ cost: 10, amount: 200 }, true],
+    [{ cost: 10, amount: 240 }, false],
+  ])('wallet %o is low: %s', (wallet, low) => {
+    expect(isWalletLow(wallet)).toBe(low);
   });
 
   it('lists each package once in the SBOM', () => {

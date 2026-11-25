@@ -27,6 +27,7 @@ import type { BranchConfig } from '../../types.ts';
 import { readDashboardBody } from '../dependency-dashboard.ts';
 import type { ExtractResult } from './extract-update.ts';
 import { extract, lookup, update } from './extract-update.ts';
+import { prefetchVulnersAudit } from './vulners/index.ts';
 import type { WriteUpdateResult } from './write.ts';
 
 function isPlatformOrTemporaryError(message: unknown): boolean {
@@ -270,6 +271,7 @@ export async function extractDependencies(
       },
     );
     addSplit('extract');
+    await prefetchVulnersAudit(config, Object.values(extracted));
     await instrument(
       'lookup',
       async () => {

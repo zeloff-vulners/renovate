@@ -27,11 +27,13 @@ import {
   update,
 } from './extract-update.ts';
 import * as _fetch from './fetch.ts';
+import * as _vulners from './vulners/index.ts';
 import * as _write from './write.ts';
 
 const createVulnerabilitiesMock = vi.fn();
 
 vi.mock('./write.ts');
+vi.mock('./vulners/index.ts');
 vi.mock('./sort.ts');
 vi.mock('./fetch.ts');
 vi.mock('./vulnerabilities.ts', () => {
@@ -1112,6 +1114,22 @@ describe('workers/repository/process/extract-update', () => {
         // the cached object stays without it
         expect(JSON.stringify(packageFiles)).not.toContain('secret');
       });
+    });
+
+    it('adds the Vulners rules once per lookup', async () => {
+      const config = {
+        repoIsOnboarded: true,
+        vulnersVulnerabilityAlerts: true,
+      };
+      repositoryCache.getCache.mockReturnValueOnce({ scan: {} });
+      scm.checkoutBranch.mockResolvedValueOnce(branchSha);
+
+      const packageFiles = await extract(config);
+      await lookup(config, packageFiles);
+
+      expect(
+        vi.mocked(_vulners).appendVulnersPackageRules,
+      ).toHaveBeenCalledExactlyOnceWith(config, packageFiles);
     });
 
     it('fetches vulnerabilities', async () => {

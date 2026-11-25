@@ -48,6 +48,7 @@ import { OnboardingState } from './onboarding/common.ts';
 import { ensureOnboardingPr } from './onboarding/pr/index.ts';
 import type { ExtractResult } from './process/extract-update.ts';
 import { extractDependencies, updateRepo } from './process/index.ts';
+import { resetVulnersAudit } from './process/vulners/index.ts';
 import type { ProcessResult, RepositoryResult } from './result.ts';
 import { processResult } from './result.ts';
 
@@ -56,6 +57,10 @@ export async function renovateRepository(
   repoConfig: RenovateConfig,
   canRetry = true,
 ): Promise<ProcessResult | undefined> {
+  if (canRetry) {
+    // a restart after an automerge reuses the Vulners outcome of this run
+    resetVulnersAudit();
+  }
   splitInit();
 
   let repoResult: ProcessResult | undefined;

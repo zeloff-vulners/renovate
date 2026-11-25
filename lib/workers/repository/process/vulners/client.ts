@@ -23,6 +23,13 @@ export interface VulnersWallet {
   amount: number;
 }
 
+/** Fewer credits left than a day of hourly runs needs */
+export function isWalletLow(
+  wallet: VulnersWallet | undefined,
+): wallet is VulnersWallet {
+  return !!wallet && wallet.amount < wallet.cost * 24;
+}
+
 export type VulnersOutcome =
   | { status: 'ok'; findings: VulnersFinding[]; wallet?: VulnersWallet }
   | { status: 'no-dependencies' }

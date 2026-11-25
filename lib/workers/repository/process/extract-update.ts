@@ -36,6 +36,7 @@ import { fetchUpdates } from './fetch.ts';
 import { calculateLibYears } from './libyear.ts';
 import { sortBranches } from './sort.ts';
 import { Vulnerabilities } from './vulnerabilities.ts';
+import { appendVulnersPackageRules } from './vulners/index.ts';
 import type { WriteUpdateResult } from './write.ts';
 import { writeUpdates } from './write.ts';
 
@@ -371,6 +372,7 @@ export async function lookup(
   config: RenovateConfig,
   packageFiles: Record<string, PackageFile[]>,
 ): Promise<ExtractResult> {
+  await appendVulnersPackageRules(config, packageFiles);
   await fetchVulnerabilities(config, packageFiles);
   await fetchUpdates(config, packageFiles);
   // call this twice, as the second time, the updates will be availalbe for malicious package checks

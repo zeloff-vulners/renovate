@@ -2804,6 +2804,15 @@ const options: Readonly<RenovateOptions>[] = [
     experimentalIssues: [20542],
   },
   {
+    name: 'vulnersVulnerabilityAlerts',
+    scopes: ['repo'],
+    description:
+      'Use vulnerability alerts from Vulners (vulners.com). Requires a Vulners API key in `hostRules`.',
+    type: 'boolean',
+    default: false,
+    experimental: true,
+  },
+  {
     name: 'pruneBranchAfterAutomerge',
     scopes: sharedScopes,
     description: 'Set to `true` to enable branch pruning after automerging.',

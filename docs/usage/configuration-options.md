@@ -5568,3 +5568,44 @@ If `vulnerabilityFixStrategy=highest` is configured then Renovate will use its n
   }
 }
 ```
+
+## `vulnersVulnerabilityAlerts`
+
+Renovate integrates with [Vulners](https://vulners.com), a vulnerability database which aggregates advisories from many sources, to check if extracted dependencies have known vulnerabilities.
+Set `vulnersVulnerabilityAlerts` to `true` to get pull requests with vulnerability fixes (once they are available).
+
+Vulners needs an API key.
+A free key works, see [vulners.com](https://vulners.com).
+Add the key to your `hostRules`, preferably as an [encrypted secret](./getting-started/private-packages.md):
+
+```json
+{
+  "vulnersVulnerabilityAlerts": true,
+  "hostRules": [
+    {
+      "matchHost": "vulners.com",
+      "token": "{{ secrets.VULNERS_API_KEY }}"
+    }
+  ]
+}
+```
+
+Renovate sends the name and version of each dependency to Vulners once per repository run, as a CycloneDX SBOM.
+It only sends dependencies that use one of these datasources:
+
+- [`clojure`](./modules/datasource/clojure/index.md)
+- [`crate`](./modules/datasource/crate/index.md)
+- [`go`](./modules/datasource/go/index.md)
+- [`hackage`](./modules/datasource/hackage/index.md)
+- [`hex`](./modules/datasource/hex/index.md)
+- [`maven`](./modules/datasource/maven/index.md)
+- [`npm`](./modules/datasource/npm/index.md)
+- [`nuget`](./modules/datasource/nuget/index.md)
+- [`packagist`](./modules/datasource/packagist/index.md)
+- [`pypi`](./modules/datasource/pypi/index.md)
+- [`rubygems`](./modules/datasource/rubygems/index.md)
+
+Each check uses Vulners credits.
+If the credits run out, or Vulners can not be reached, Renovate keeps working without the vulnerability check, and explains why in the Dependency Dashboard.
+
+You can enable `vulnersVulnerabilityAlerts` together with `osvVulnerabilityAlerts`.

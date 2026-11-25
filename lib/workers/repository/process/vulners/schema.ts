@@ -1,5 +1,5 @@
 import { z } from 'zod/v4';
-import { Nullish } from '../../../../util/schema-utils/index.ts';
+import { LooseArray, Nullish } from '../../../../util/schema-utils/index.ts';
 
 // Enrichment fields only decorate the pull request; a field of an unexpected
 // shape is dropped instead of failing the whole response.
@@ -35,11 +35,11 @@ export const VulnersAuditItem = z.object({
   package: z.string(),
   version: z.string(),
   fixedVersion: Nullish(z.string()),
-  applicableAdvisories: z.array(VulnersAdvisory).default([]),
+  applicableAdvisories: LooseArray(VulnersAdvisory).default([]),
 });
 export type VulnersAuditItem = z.infer<typeof VulnersAuditItem>;
 
 export const VulnersAuditResponse = z.object({
-  result: z.object({ data: z.array(VulnersAuditItem) }),
+  result: z.object({ data: LooseArray(VulnersAuditItem) }),
 });
 export type VulnersAuditResponse = z.infer<typeof VulnersAuditResponse>;

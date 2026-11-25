@@ -152,6 +152,62 @@ describe('workers/repository/process/vulners/index', () => {
     );
   });
 
+  it('turns a throw into a failed check', async () => {
+    const broken: Record<string, PackageFile[]> = {
+      pip_requirements: [
+        {
+          packageFile: 'requirements.txt',
+          deps: [
+            {
+              datasource: 'pypi',
+              packageName: 'Django',
+              currentValue: '3.2.0',
+              versioning: 'regex:^(?<major>\\d+',
+            },
+          ],
+        },
+      ],
+    };
+    await expect(
+      prefetchVulnersAudit(config, [broken]),
+    ).resolves.toBeUndefined();
+    await expect(
+      appendVulnersPackageRules(config, broken),
+    ).resolves.toBeUndefined();
+    expect(fetchAudit).not.toHaveBeenCalled();
+    expect(config.packageRules).toBeEmptyArray();
+    await expect(getVulnersOutcome('some/repo')).resolves.toMatchObject({
+      status: 'failed',
+    });
+    expect(logger.logger.warn).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining('Vulners check failed'),
+    );
+  });
+
+  it('warns when the rules of a branch can not be built', async () => {
+    await prefetchVulnersAudit(config, [packageFiles(['Django', '3.2.0'])]);
+    const broken = packageFiles(['Django', undefined]);
+    broken.pip_requirements[0].deps[0].currentValue = '3.2.0';
+    broken.pip_requirements[0].deps[0].versioning = 'regex:^(?<major>\\d+';
+    await expect(
+      appendVulnersPackageRules(config, broken),
+    ).resolves.toBeUndefined();
+    expect(config.packageRules).toBeEmptyArray();
+    expect(logger.logger.warn).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining('Vulners check failed'),
+    );
+  });
+
+  it('does not send skipped dependencies', () => {
+    const files = packageFiles(['Django', '3.2.0'], ['internal-lib', '1.0.0']);
+    files.pip_requirements[0].deps[1].skipReason = 'internal-package';
+    expect(
+      collectVulnersDependencies(config, [files]).map((dep) => dep.packageName),
+    ).toEqual(['Django']);
+  });
+
   it('stays quiet without dependencies', async () => {
     fetchAudit.mockResolvedValueOnce({ status: 'no-dependencies' });
     await appendVulnersPackageRules(config, {});

@@ -2,7 +2,7 @@ import {
   getManagerConfig,
   mergeChildConfig,
 } from '../../../../config/index.ts';
-import type { RenovateConfig } from '../../../../config/types.ts';
+import type { PackageRule, RenovateConfig } from '../../../../config/types.ts';
 import { logger } from '../../../../logger/index.ts';
 import type { PackageFile } from '../../../../modules/manager/types.ts';
 import {
@@ -43,6 +43,10 @@ export function collectVulnersDependencies(
       for (const packageFile of files) {
         const packageFileConfig = mergeChildConfig(managerConfig, packageFile);
         for (const dep of packageFile.deps) {
+          // ignored and internal dependencies are not sent to a third party
+          if (dep.skipReason) {
+            continue;
+          }
           const pkg = toVulnersPackage(dep);
           if (pkg) {
             deps.push({
@@ -92,6 +96,20 @@ function logOutcome(outcome: VulnersOutcome): void {
   }
 }
 
+async function auditPackages(
+  config: RenovateConfig,
+  packageFilesList: Record<string, PackageFile[]>[],
+): Promise<VulnersOutcome> {
+  try {
+    const packages = collectVulnersDependencies(config, packageFilesList).map(
+      (dep) => dep.pkg,
+    );
+    return await fetchVulnersAudit(packages);
+  } catch (err) {
+    return { status: 'failed', reason: err.message };
+  }
+}
+
 function startAudit(
   config: RenovateConfig,
   packageFilesList: Record<string, PackageFile[]>[],
@@ -100,10 +118,7 @@ function startAudit(
   if (existing) {
     return existing;
   }
-  const packages = collectVulnersDependencies(config, packageFilesList).map(
-    (dep) => dep.pkg,
-  );
-  const outcome = fetchVulnersAudit(packages).then((result) => {
+  const outcome = auditPackages(config, packageFilesList).then((result) => {
     logOutcome(result);
     return result;
   });
@@ -135,10 +150,16 @@ export async function appendVulnersPackageRules(
   if (outcome.status !== 'ok') {
     return;
   }
-  const rules = buildVulnersPackageRules(
-    collectVulnersDependencies(config, [packageFiles]),
-    outcome.findings,
-  );
+  let rules: PackageRule[];
+  try {
+    rules = buildVulnersPackageRules(
+      collectVulnersDependencies(config, [packageFiles]),
+      outcome.findings,
+    );
+  } catch (err) {
+    logger.warn({ err }, 'Vulners check failed - no Vulners rules added');
+    return;
+  }
   config.packageRules ??= [];
   config.packageRules.push(...rules);
 }

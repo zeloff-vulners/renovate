@@ -109,6 +109,22 @@ describe('workers/repository/process/vulners/rules', () => {
       },
     );
 
+    it('uses the Maven range for Clojure', () => {
+      const dep = dependency('clojure', 'io.netty/netty-all', '4.1.100.Final');
+      const [rule] = buildVulnersPackageRules(
+        [dep],
+        [finding(dep.pkg.key, '4.1.108.Final')],
+      );
+      expect(rule.allowedVersions).toBe('[4.1.108.Final,)');
+    });
+
+    it('makes no rule from a fix the versioning can not express', () => {
+      const dep = dependency('hackage', 'aeson', '2.1.0.0');
+      expect(
+        buildVulnersPackageRules([dep], [finding(dep.pkg.key, '2.1.2.1')]),
+      ).toEqual([]);
+    });
+
     it('makes no rule without a fix', () => {
       expect(
         buildVulnersPackageRules(

@@ -140,6 +140,30 @@ describe('workers/repository/process/vulners/client', () => {
     });
   });
 
+  it('drops a malformed entry instead of the whole response', async () => {
+    const { type: _, ...noType } = advisory;
+    httpMock
+      .scope(baseUrl)
+      .post(path)
+      .reply(200, {
+        result: {
+          data: [
+            { package: 'broken', version: null, applicableAdvisories: [] },
+            {
+              ...okBody.result.data[0],
+              applicableAdvisories: [noType, advisory],
+            },
+          ],
+        },
+      });
+    await expect(fetchVulnersAudit([django])).resolves.toMatchObject({
+      status: 'ok',
+      findings: [
+        { key: 'pypi:django@3.2.0', advisories: [{ id: advisory.id }] },
+      ],
+    });
+  });
+
   it('keeps a vulnerable package without a fix', async () => {
     httpMock
       .scope(baseUrl)

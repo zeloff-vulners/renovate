@@ -1,5 +1,8 @@
+import semver from 'semver';
 import type { PackageRule, RenovateConfig } from '../../../../config/types.ts';
+import { logger } from '../../../../logger/index.ts';
 import { getDefaultVersioning } from '../../../../modules/datasource/common.ts';
+import { get as getVersioning } from '../../../../modules/versioning/index.ts';
 import { coerceArray } from '../../../../util/array.ts';
 import { sanitizeMarkdown } from '../../../../util/markdown.ts';
 import { regEx } from '../../../../util/regex.ts';
@@ -114,6 +117,14 @@ function fixedVersionFor(dep: VulnersDependency, fixedVersion: string): string {
   return fixedVersion;
 }
 
+/** Mirrors what `lookup/filter.ts` accepts for `allowedVersions`. */
+function isUsableConstraint(versioning: string, constraint: string): boolean {
+  return (
+    getVersioning(versioning).isValid(constraint) ||
+    !!semver.validRange(constraint)
+  );
+}
+
 export function buildVulnersPackageRules(
   deps: VulnersDependency[],
   findings: VulnersFinding[],
@@ -134,12 +145,26 @@ export function buildVulnersPackageRules(
     seen.add(ruleKey);
 
     const fixedVersion = fixedVersionFor(dep, finding.fixedVersion);
+    const versioning = dep.versioning ?? getDefaultVersioning(dep.datasource);
+    // The purl type names the ecosystem: Clojure needs Maven ranges
+    const allowedVersions = getFixedVersionConstraint(
+      fixedVersion,
+      dep.pkg.purlType,
+    );
+    // lookup aborts the whole repository on a constraint it can not parse
+    if (!isUsableConstraint(versioning, allowedVersions)) {
+      logger.debug(
+        { packageName: dep.packageName, allowedVersions, versioning },
+        'Vulners fix version is not valid for the versioning - skipping',
+      );
+      continue;
+    }
     rules.push({
       matchDatasources: [dep.datasource],
       matchPackageNames: [dep.packageName],
       matchCurrentVersion: dep.pkg.version,
-      versioning: dep.versioning ?? getDefaultVersioning(dep.datasource),
-      allowedVersions: getFixedVersionConstraint(fixedVersion, dep.datasource),
+      versioning,
+      allowedVersions,
       isVulnerabilityAlert: true,
       vulnerabilitySeverity: worstSeverity(finding.advisories),
       prBodyNotes: generateVulnersPrBodyNotes(finding.advisories),

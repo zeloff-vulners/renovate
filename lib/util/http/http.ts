@@ -452,6 +452,20 @@ export abstract class HttpBase<
     return this.request(url, { ...options, responseType: 'text' });
   }
 
+  /**
+   * POST `options.body` as is (e.g. a `FormData`) and return the response as text.
+   */
+  postText(
+    url: string | URL,
+    options: HttpOptions = {},
+  ): Promise<HttpResponse> {
+    return this.request(url, {
+      ...options,
+      method: 'post',
+      responseType: 'text',
+    });
+  }
+
   getBuffer(
     url: string | URL,
     options: HttpOptions = {},

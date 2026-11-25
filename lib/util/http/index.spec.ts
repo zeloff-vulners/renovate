@@ -240,6 +240,13 @@ describe('util/http/index', () => {
     });
   });
 
+  it('postText sends the body as is', async () => {
+    httpMock.scope(baseUrl).post('/', 'raw').reply(200, 'ok');
+    const res = await http.postText('http://renovate.com', { body: 'raw' });
+    expect(res.body).toBe('ok');
+    expect(httpMock.allUsed()).toBeTrue();
+  });
+
   it('postJson', async () => {
     httpMock.scope(baseUrl).post('/').reply(200, {});
     await expect(

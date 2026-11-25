@@ -1,4 +1,5 @@
 import { ClojureDatasource } from '../../../../modules/datasource/clojure/index.ts';
+import { getDefaultVersioning } from '../../../../modules/datasource/common.ts';
 import { CrateDatasource } from '../../../../modules/datasource/crate/index.ts';
 import { GoDatasource } from '../../../../modules/datasource/go/index.ts';
 import { HackageDatasource } from '../../../../modules/datasource/hackage/index.ts';
@@ -10,6 +11,7 @@ import { PackagistDatasource } from '../../../../modules/datasource/packagist/in
 import { PypiDatasource } from '../../../../modules/datasource/pypi/index.ts';
 import { RubygemsDatasource } from '../../../../modules/datasource/rubygems/index.ts';
 import type { PackageDependency } from '../../../../modules/manager/types.ts';
+import { get as getVersioning } from '../../../../modules/versioning/index.ts';
 import { regEx } from '../../../../util/regex.ts';
 
 export type VulnersPurlType =
@@ -94,12 +96,27 @@ function purlPath(purlType: VulnersPurlType, name: string): string | null {
   return name;
 }
 
+/**
+ * The exact version in use. Vulners is asked before the lookup sets
+ * `currentVersion`, so an exact `currentValue` counts too, as for OSV.
+ */
+function exactVersion(dep: PackageDependency): string | undefined {
+  const version = dep.lockedVersion ?? dep.currentVersion;
+  if (version || !dep.currentValue) {
+    return version;
+  }
+  const versioning = getVersioning(
+    dep.versioning ?? getDefaultVersioning(dep.datasource),
+  );
+  return versioning.isVersion(dep.currentValue) ? dep.currentValue : undefined;
+}
+
 export function toVulnersPackage(
   dep: PackageDependency,
 ): VulnersPackage | null {
   const purlType = datasourceToPurlType[dep.datasource ?? ''];
   const name = dep.packageName ?? dep.depName;
-  const version = dep.lockedVersion ?? dep.currentVersion;
+  const version = exactVersion(dep);
   if (!purlType || !name || !version) {
     return null;
   }

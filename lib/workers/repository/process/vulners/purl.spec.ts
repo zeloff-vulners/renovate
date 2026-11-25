@@ -115,6 +115,33 @@ describe('workers/repository/process/vulners/purl', () => {
       ).toBe('pkg:gem/rails@6.0.0');
     });
 
+    it.each([
+      ['npm', '@babel/traverse', '7.22.0'],
+      ['maven', 'org.apache.logging.log4j:log4j-core', '2.14.1'],
+      ['go', 'github.com/gin-gonic/gin', 'v1.6.0'],
+    ])(
+      'takes an exact %s currentValue before the lookup set currentVersion',
+      (datasource, packageName, currentValue) => {
+        expect(
+          toVulnersPackage(dep({ datasource, packageName, currentValue }))
+            ?.version,
+        ).toBe(currentValue);
+      },
+    );
+
+    it('uses the versioning of the dependency for currentValue', () => {
+      expect(
+        toVulnersPackage(
+          dep({
+            datasource: 'npm',
+            packageName: 'lodash',
+            currentValue: '1.2.3.4',
+            versioning: 'loose',
+          }),
+        )?.version,
+      ).toBe('1.2.3.4');
+    });
+
     it('prefers the locked version', () => {
       expect(
         toVulnersPackage(

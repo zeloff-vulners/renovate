@@ -18,6 +18,9 @@ import type { VulnersAdvisory } from './schema.ts';
 /** Pull requests list at most this many advisories per package in full. */
 export const MAX_ADVISORIES_IN_PR = 10;
 
+/** Advisory descriptions are cut to this many characters. */
+export const MAX_DESCRIPTION_LENGTH = 1000;
+
 export interface VulnersDependency {
   pkg: VulnersPackage;
   datasource: string;
@@ -52,6 +55,13 @@ function worstSeverity(advisories: VulnersAdvisory[]): string {
   return severity ?? 'UNKNOWN';
 }
 
+function capDescription(description: string | undefined): string | undefined {
+  if (!description || description.length <= MAX_DESCRIPTION_LENGTH) {
+    return description;
+  }
+  return `${description.slice(0, MAX_DESCRIPTION_LENGTH)}…`;
+}
+
 function describeAdvisory(advisory: VulnersAdvisory): string {
   const links = [
     `[${advisory.id}](${vulnersAdvisoryUrl(advisory.type, advisory.id)})`,
@@ -68,7 +78,10 @@ function describeAdvisory(advisory: VulnersAdvisory): string {
   }
   content += '\n<details>\n<summary>More information</summary>\n';
 
-  const details = advisory.description?.replace(regEx(/^#{1,4} /gm), '##### ');
+  const details = capDescription(advisory.description)?.replace(
+    regEx(/^#{1,4} /gm),
+    '##### ',
+  );
   content += `#### Details\n${details ?? 'No details.'}\n`;
 
   content += '#### Severity\n';
@@ -130,6 +143,16 @@ export function buildVulnersPackageRules(
   findings: VulnersFinding[],
 ): PackageRule[] {
   const byKey = new Map(findings.map((finding) => [finding.key, finding]));
+  const depKeys = new Set(deps.map((dep) => dep.pkg.key));
+  const unmatched = findings
+    .map((finding) => finding.key)
+    .filter((key) => !depKeys.has(key));
+  if (unmatched.length) {
+    logger.debug(
+      { findings: unmatched },
+      'Vulners findings which match no dependency',
+    );
+  }
   const seen = new Set<string>();
   const rules: PackageRule[] = [];
 

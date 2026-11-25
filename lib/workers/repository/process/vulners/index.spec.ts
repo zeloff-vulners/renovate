@@ -141,14 +141,22 @@ describe('workers/repository/process/vulners/index', () => {
   it.each([
     [{ status: 'out-of-credits' as const }, 'Vulners credits are used up'],
     [{ status: 'no-key' as const }, 'No Vulners API key'],
+    [{ status: 'bad-key' as const }, 'Vulners rejected the API key'],
     [{ status: 'failed' as const, reason: 'HTTP 403' }, 'Vulners check failed'],
   ])('adds no rules and warns on %o', async (outcome, message) => {
     fetchAudit.mockResolvedValueOnce(outcome);
     await appendVulnersPackageRules(config, packageFiles(['Django', '3.2.0']));
     expect(config.packageRules).toBeEmptyArray();
-    expect(logger.logger.warn).toHaveBeenCalledWith(
-      expect.anything(),
+    expect(logger.logger.warn.mock.calls.flat()).toContainEqual(
       expect.stringContaining(message),
+    );
+  });
+
+  it('warns about used-up credits without an empty context', async () => {
+    fetchAudit.mockResolvedValueOnce({ status: 'out-of-credits' });
+    await appendVulnersPackageRules(config, packageFiles(['Django', '3.2.0']));
+    expect(logger.logger.warn).toHaveBeenCalledWith(
+      'Vulners credits are used up - skipping the Vulners check',
     );
   });
 

@@ -1,8 +1,10 @@
+import { logger } from '~test/util.ts';
 import type { RenovateConfig } from '../../../../config/types.ts';
 import type { VulnersFinding } from './client.ts';
 import { toVulnersPackage } from './purl.ts';
 import {
   MAX_ADVISORIES_IN_PR,
+  MAX_DESCRIPTION_LENGTH,
   type VulnersDependency,
   buildVulnersPackageRules,
   generateVulnersPrBodyNotes,
@@ -155,6 +157,20 @@ describe('workers/repository/process/vulners/rules', () => {
       ).toHaveLength(1);
     });
 
+    it('logs findings which match no dependency', () => {
+      buildVulnersPackageRules(
+        [dependency('pypi', 'Django', '3.2.0')],
+        [
+          finding('pypi:django@3.2.0', '5.2.17'),
+          finding('pypi:flask@1.0', '2.3.2'),
+        ],
+      );
+      expect(logger.logger.debug).toHaveBeenCalledWith(
+        { findings: ['pypi:flask@1.0'] },
+        'Vulners findings which match no dependency',
+      );
+    });
+
     it('takes the worst severity', () => {
       const [rule] = buildVulnersPackageRules(
         [dependency('pypi', 'Django', '3.2.0')],
@@ -229,6 +245,14 @@ describe('workers/repository/process/vulners/rules', () => {
       expect(note).not.toContain('CVSS Score');
       expect(note).not.toContain('EPSS');
       expect(note).not.toContain('AI Score');
+    });
+
+    it('caps a long description', () => {
+      const [note] = generateVulnersPrBodyNotes([
+        advisory({ description: 'a'.repeat(MAX_DESCRIPTION_LENGTH + 500) }),
+      ]);
+      expect(note).toContain(`${'a'.repeat(MAX_DESCRIPTION_LENGTH)}…`);
+      expect(note).not.toContain('a'.repeat(MAX_DESCRIPTION_LENGTH + 1));
     });
 
     it('puts the worst advisories first and caps the list', () => {

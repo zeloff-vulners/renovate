@@ -84,11 +84,14 @@ function logOutcome(outcome: VulnersOutcome): void {
         'No Vulners API key in hostRules - skipping the Vulners check',
       );
       break;
-    case 'out-of-credits':
+    case 'bad-key':
       logger.warn(
-        {},
-        'Vulners credits are used up - skipping the Vulners check',
+        { matchHost: 'vulners.com' },
+        'Vulners rejected the API key in hostRules - skipping the Vulners check',
       );
+      break;
+    case 'out-of-credits':
+      logger.warn('Vulners credits are used up - skipping the Vulners check');
       break;
     case 'failed':
       logger.warn({ reason: outcome.reason }, 'Vulners check failed');

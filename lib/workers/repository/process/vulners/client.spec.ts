@@ -204,9 +204,20 @@ describe('workers/repository/process/vulners/client', () => {
     });
   });
 
+  it('reports a rejected key', async () => {
+    httpMock
+      .scope(baseUrl)
+      .post(path)
+      .reply(401, {
+        detail: { type: 'auth_error', msg: 'Unauthorized API key' },
+      });
+    await expect(fetchVulnersAudit([django])).resolves.toEqual({
+      status: 'bad-key',
+    });
+  });
+
   it.each([
     [403, '<html>Just a moment...</html>'],
-    [401, '{"result":"error"}'],
     [500, 'oops'],
   ])('fails on HTTP %d', async (status, body) => {
     httpMock.scope(baseUrl).post(path).reply(status, body);

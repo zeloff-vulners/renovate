@@ -49,6 +49,8 @@ function describeOutcome(
       return `> [!WARNING]\n> Vulners credits for this month are used up; vulnerability checks are paused.\n> ${getVulnersSalesOffer()}\n\n`;
     case 'no-key':
       return 'Add a Vulners API key to `hostRules` to check vulnerabilities with Vulners, see `vulnersVulnerabilityAlerts`.\n\n';
+    case 'bad-key':
+      return 'Vulners rejected the API key in `hostRules`. Check the key, see `vulnersVulnerabilityAlerts`.\n\n';
     case 'failed':
       return 'Renovate could not check vulnerabilities with Vulners this run.\n\n';
     case 'no-dependencies':

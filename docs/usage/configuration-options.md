@@ -5576,7 +5576,7 @@ Set `vulnersVulnerabilityAlerts` to `true` to get pull requests with vulnerabili
 
 Vulners needs an API key.
 A free key works, see [vulners.com](https://vulners.com).
-Add the key to your `hostRules`, preferably as an [encrypted secret](./getting-started/private-packages.md):
+Add the key to your `hostRules` through a [secret](./self-hosted-configuration.md#secrets), not as plain text in the repository:
 
 ```json
 {
@@ -5606,6 +5606,6 @@ It only sends dependencies that use one of these datasources:
 - [`rubygems`](./modules/datasource/rubygems/index.md)
 
 Each check uses Vulners credits.
-If the credits run out, or Vulners can not be reached, Renovate keeps working without the vulnerability check, and explains why in the Dependency Dashboard.
+If the key is missing or wrong, the credits run out, or Vulners can not be reached, Renovate keeps working without the vulnerability check, and explains why in the Dependency Dashboard.
 
 You can enable `vulnersVulnerabilityAlerts` together with `osvVulnerabilityAlerts`.

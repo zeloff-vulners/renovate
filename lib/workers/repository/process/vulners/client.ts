@@ -34,6 +34,7 @@ export type VulnersOutcome =
   | { status: 'ok'; findings: VulnersFinding[]; wallet?: VulnersWallet }
   | { status: 'no-dependencies' }
   | { status: 'no-key' }
+  | { status: 'bad-key' }
   | { status: 'out-of-credits' }
   | { status: 'failed'; reason: string };
 
@@ -136,6 +137,9 @@ export async function fetchVulnersAudit(
     return { status: 'failed', reason: `request failed: ${err.message}` };
   }
 
+  if (res.statusCode === 401) {
+    return { status: 'bad-key' };
+  }
   if (res.statusCode === 402) {
     return { status: 'out-of-credits' };
   }

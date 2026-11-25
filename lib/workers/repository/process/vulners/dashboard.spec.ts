@@ -97,6 +97,13 @@ describe('workers/repository/process/vulners/dashboard', () => {
     expect(md).not.toContain(VULNERS_SALES_URL);
   });
 
+  it('reports a rejected key without selling', async () => {
+    withOutcome({ status: 'bad-key' });
+    const md = await getVulnersDashboardMarkdown(config);
+    expect(md).toContain('Vulners rejected the API key in `hostRules`');
+    expect(md).not.toContain(VULNERS_SALES_URL);
+  });
+
   it('reports a failed check without selling', async () => {
     withOutcome({ status: 'failed', reason: 'HTTP 403' });
     const md = await getVulnersDashboardMarkdown(config);

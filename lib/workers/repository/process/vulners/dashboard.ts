@@ -5,14 +5,6 @@ import { type VulnersOutcome, isWalletLow } from './client.ts';
 import { getVulnersOutcome } from './index.ts';
 import { vulnersAdvisoryUrl } from './rules.ts';
 
-export const VULNERS_SALES_URL =
-  'https://vulners.com/contact/?utm_source=renovate&utm_medium=plugin&utm_campaign=freemium&utm_content=talk_to_sales';
-
-/** The only place which offers a Vulners license. */
-export function getVulnersSalesOffer(): string {
-  return `To keep checking, [talk to Vulners about a license](${VULNERS_SALES_URL}).`;
-}
-
 const MAX_ADVISORY_LINKS = 5;
 
 function listUnfixed(
@@ -46,7 +38,7 @@ function describeOutcome(
 ): string {
   switch (outcome.status) {
     case 'out-of-credits':
-      return `> [!WARNING]\n> Vulners credits for this month are used up; vulnerability checks are paused.\n> ${getVulnersSalesOffer()}\n\n`;
+      return `> [!WARNING]\n> Vulners credits for this month are used up; vulnerability checks are paused.\n\n`;
     case 'no-key':
       return 'Add a Vulners API key to `hostRules` to check vulnerabilities with Vulners, see `vulnersVulnerabilityAlerts`.\n\n';
     case 'bad-key':
@@ -58,7 +50,7 @@ function describeOutcome(
     case 'ok': {
       let md = '';
       if (isWalletLow(outcome.wallet)) {
-        md += `> [!NOTE]\n> Vulners credits are running low: ${outcome.wallet.amount} left, ${outcome.wallet.cost} per run.\n> ${getVulnersSalesOffer()}\n\n`;
+        md += `> [!NOTE]\n> Vulners credits are running low: ${outcome.wallet.amount} left, ${outcome.wallet.cost} per run.\n\n`;
       }
       return md + listUnfixed(config, outcome);
     }

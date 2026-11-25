@@ -22,6 +22,7 @@ import type { BranchConfig, BranchUpgradeConfig } from '../types.ts';
 import * as dependencyDashboard from './dependency-dashboard.ts';
 import { getDashboardMarkdownVulnerabilities } from './dependency-dashboard.ts';
 import { PackageFiles } from './package-files.ts';
+import { getVulnersDashboardMarkdown } from './process/vulners/dashboard.ts';
 
 const createVulnerabilitiesMock = vi.fn();
 vi.mock('./process/vulnerabilities.ts', () => {
@@ -35,6 +36,8 @@ vi.mock('./process/vulnerabilities.ts', () => {
   };
 });
 
+vi.mock('./process/vulners/dashboard.ts');
+
 type PrUpgrade = BranchUpgradeConfig;
 
 const massageMdSpy = platform.massageMarkdown;
@@ -46,6 +49,7 @@ beforeEach(() => {
   GlobalConfig.reset();
   massageMdSpy.mockImplementation(massageMarkdown);
   platform.maxBodyLength.mockReturnValue(60000); // Github Limit
+  vi.mocked(getVulnersDashboardMarkdown).mockResolvedValue('');
   config = getConfig() as BranchConfig;
   config.errors = [];
   config.warnings = [];
@@ -601,6 +605,24 @@ describe('workers/repository/dependency-dashboard', () => {
         expect(platform.ensureIssueClosing).not.toHaveBeenCalled();
         expect(config.dependencyDashboardIssue).toBe(1);
       });
+    });
+
+    it('renders the Vulners section', async () => {
+      vi.mocked(getVulnersDashboardMarkdown).mockResolvedValueOnce(
+        '## Vulners\n\nVulners section\n\n',
+      );
+      config.dependencyDashboard = true;
+
+      await dependencyDashboard.ensureDependencyDashboard(
+        config,
+        [],
+        {},
+        { result: 'no-migration' },
+      );
+
+      expect(platform.ensureIssue.mock.calls[0][0].body).toContain(
+        '## Vulners\n\nVulners section\n\n',
+      );
     });
 
     it('renders no header and no abandonment section when both are off', async () => {

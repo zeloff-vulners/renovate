@@ -23,6 +23,7 @@ import { getDepWarningsDashboard } from './errors-warnings.ts';
 import { PackageFiles } from './package-files.ts';
 import type { Vulnerability } from './process/types.ts';
 import { Vulnerabilities } from './process/vulnerabilities.ts';
+import { getVulnersDashboardMarkdown } from './process/vulners/dashboard.ts';
 import type {
   DependencyDashboardCheck,
   DependencyDashboardListItemType,
@@ -638,7 +639,8 @@ export async function ensureDependencyDashboard(
       'This repository currently has no open or pending branches.\n\n';
   }
 
-  // add CVE section
+  // add CVE sections
+  issueBody += await getVulnersDashboardMarkdown(config);
   issueBody += await getDashboardMarkdownVulnerabilities(config, packageFiles);
 
   // fit the detected dependencies section

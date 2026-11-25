@@ -611,7 +611,7 @@ describe('workers/repository/dependency-dashboard', () => {
       vi.mocked(getVulnersDashboardMarkdown).mockResolvedValueOnce(
         '## Vulners\n\nVulners section\n\n',
       );
-      config.dependencyDashboard = true;
+      config.dependencyDashboard = { enabled: true };
 
       await dependencyDashboard.ensureDependencyDashboard(
         config,

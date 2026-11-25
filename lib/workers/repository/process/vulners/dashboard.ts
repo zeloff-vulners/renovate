@@ -11,7 +11,7 @@ function listUnfixed(
   config: RenovateConfig,
   outcome: Extract<VulnersOutcome, { status: 'ok' }>,
 ): string {
-  const summary = config.dependencyDashboardOSVVulnerabilitySummary;
+  const summary = config.dependencyDashboard?.osvVulnerabilitySummary;
   if (isNullOrUndefined(summary) || summary === 'none') {
     return '';
   }
@@ -60,7 +60,7 @@ function describeOutcome(
 /**
  * The Vulners section of the Dependency Dashboard: credits, key and failures
  * always show when the option is on; packages without a fix follow
- * `dependencyDashboardOSVVulnerabilitySummary`.
+ * `dependencyDashboard.osvVulnerabilitySummary`.
  */
 export async function getVulnersDashboardMarkdown(
   config: RenovateConfig,

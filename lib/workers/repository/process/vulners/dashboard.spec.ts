@@ -109,7 +109,7 @@ describe('workers/repository/process/vulners/dashboard', () => {
   it.each(['all', 'unresolved'] as const)(
     'lists vulnerable packages without a fix for %s',
     async (summary) => {
-      config.dependencyDashboardOSVVulnerabilitySummary = summary;
+      config.dependencyDashboard = { osvVulnerabilitySummary: summary };
       withOutcome(unfixed);
       const md = await getVulnersDashboardMarkdown(config);
       expect(md).toContain(
@@ -120,7 +120,7 @@ describe('workers/repository/process/vulners/dashboard', () => {
   );
 
   it('links a few advisories of a package without a fix', async () => {
-    config.dependencyDashboardOSVVulnerabilitySummary = 'all';
+    config.dependencyDashboard = { osvVulnerabilitySummary: 'all' };
     withOutcome({
       status: 'ok',
       findings: [
@@ -140,13 +140,13 @@ describe('workers/repository/process/vulners/dashboard', () => {
   });
 
   it('is empty when every vulnerable package has a fix', async () => {
-    config.dependencyDashboardOSVVulnerabilitySummary = 'all';
+    config.dependencyDashboard = { osvVulnerabilitySummary: 'all' };
     withOutcome({ status: 'ok', findings: [unfixed.findings[1]] });
     await expect(getVulnersDashboardMarkdown(config)).resolves.toBe('');
   });
 
   it('does not list packages without a fix when the summary is off', async () => {
-    config.dependencyDashboardOSVVulnerabilitySummary = 'none';
+    config.dependencyDashboard = { osvVulnerabilitySummary: 'none' };
     withOutcome({ ...unfixed, wallet: { cost: 10, amount: 1 } });
     const md = await getVulnersDashboardMarkdown(config);
     expect(md).not.toContain('no fix available');
